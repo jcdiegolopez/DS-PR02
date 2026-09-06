@@ -8,6 +8,7 @@ __pycache__/
 # Datos pesados (Parquet files de Kaggle)
 data/*.parquet
 data/train_landmarks/
+data/train_landmarks_index.csv
 train_landmarks/
 
 # Archivos de entorno y SO

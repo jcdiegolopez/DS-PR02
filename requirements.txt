@@ -1,0 +1,18 @@
+# Proyecto 2 - Análisis Exploratorio | CC3084 Data Science
+# Reto 15: Google ASL Fingerspelling Recognition
+
+# Núcleo de análisis
+numpy>=1.26
+pandas>=2.0
+scipy>=1.11
+
+# Lectura columnar de los archivos train_landmarks/*.parquet
+pyarrow>=14.0
+
+# Visualización
+matplotlib>=3.8
+seaborn>=0.13
+
+# Entorno de ejecución
+jupyter>=1.0
+notebook>=7.0
