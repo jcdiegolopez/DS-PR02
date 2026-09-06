@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.ipynb_checkpoints/
+.pytest_cache/
+
+# Datos pesados (Parquet files de Kaggle)
+data/*.parquet
+data/train_landmarks/
+train_landmarks/
+
+# Archivos de entorno y SO
+.env
+.DS_Store
+Thumbs.db
