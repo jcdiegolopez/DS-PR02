@@ -9,6 +9,7 @@ __pycache__/
 data/*.parquet
 data/train_landmarks/
 data/train_landmarks_index.csv
+data/processed/
 train_landmarks/
 
 # Archivos de entorno y SO
