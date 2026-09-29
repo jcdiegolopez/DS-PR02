@@ -4,12 +4,14 @@ __pycache__/
 *$py.class
 *.ipynb_checkpoints/
 .pytest_cache/
+.venv/
 
 # Datos pesados (Parquet files de Kaggle)
 data/*.parquet
 data/train_landmarks/
 data/train_landmarks_index.csv
 data/processed/
+models/m1_last.pt
 train_landmarks/
 
 # Archivos de entorno y SO

@@ -1,0 +1,58 @@
+{
+  "m1": {
+    "sequences": 3857,
+    "normalized_edit_distance": 0.2435332213786632,
+    "cer": 0.24252028028959383,
+    "competition_score": 0.7574797197104062,
+    "exact_match": 0.1311900440757065,
+    "total_edit_distance": 16682,
+    "reference_characters": 68786,
+    "by_character_type": {
+      "letters": {
+        "reference": 42820,
+        "errors": 10115,
+        "insertions": 432,
+        "error_rate": 0.23622139187295657
+      },
+      "digits": {
+        "reference": 16290,
+        "errors": 2882,
+        "insertions": 229,
+        "error_rate": 0.1769183548189073
+      },
+      "symbols": {
+        "reference": 6383,
+        "errors": 1456,
+        "insertions": 49,
+        "error_rate": 0.22810590631364563
+      },
+      "spaces": {
+        "reference": 3293,
+        "errors": 1432,
+        "insertions": 87,
+        "error_rate": 0.4348618281202551
+      }
+    },
+    "inference_seconds_total": 8.563006999998834,
+    "inference_ms_per_sequence": 2.220121078558163,
+    "parameters": 473405,
+    "model": "M1 BiGRU + CTC",
+    "split": "val",
+    "best_epoch": 8,
+    "best_val_loss": 0.9989784322070556,
+    "train_sequences": 37366,
+    "val_sequences": 3857,
+    "seed": 42,
+    "resumed_from_epoch": 1,
+    "optimizer_reinitialized_on_resume": true,
+    "training_config": {
+      "epochs_requested": 8,
+      "batch_size": 16,
+      "learning_rate": 0.001,
+      "hidden_size": 128,
+      "num_layers": 2,
+      "dropout": 0.2,
+      "min_coverage": 0.5
+    }
+  }
+}

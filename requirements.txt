@@ -16,3 +16,6 @@ seaborn>=0.13
 # Entorno de ejecución
 jupyter>=1.0
 notebook>=7.0
+
+# Modelado secuencial
+torch>=2.3
