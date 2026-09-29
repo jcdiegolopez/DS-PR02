@@ -30,3 +30,14 @@ Pruebas de los contratos de CTC y del flujo de entrenamiento:
 ```powershell
 python -m unittest discover -s tests -v
 ```
+
+## Aplicación
+
+```powershell
+python -m pip install -r app/requirements.txt
+streamlit run app/app.py
+```
+
+Se ejecuta desde la raíz del repositorio. Tiene tres páginas: **Explorar datos** (corpus de frases y una secuencia por dentro), **Predecir** (secuencia cruda de prueba o archivo subido, preprocesamiento invisible y transcripción por modelo) y **Rendimiento** (comparación desde `models/metrics.json`). Los modelos aparecen solos cuando existen sus pesos (`models/m2_*.pt`, `models/m3_*.pt`), su entrada en `metrics.json` y su soporte en `src.models.load_model`. Todo corre en CPU.
+
+Para Streamlit Community Cloud, el archivo principal es `app/app.py` y las dependencias se leen de `app/requirements.txt`. La paleta y la tipografía están justificadas en [`reports/app_paleta.md`](reports/app_paleta.md).

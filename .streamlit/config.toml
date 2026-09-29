@@ -1,0 +1,44 @@
+# Tema de la app (ver reports/app_paleta.md para la justificación de la paleta)
+
+[server]
+enableStaticServing = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
+
+[theme]
+base = "light"
+primaryColor = "#111213"
+backgroundColor = "#EEEFEC"
+secondaryBackgroundColor = "#E3E4E0"
+textColor = "#111213"
+linkColor = "#0B5C99"
+borderColor = "#C9CBC6"
+showWidgetBorder = true
+baseRadius = "none"
+buttonRadius = "none"
+font = "Atkinson Hyperlegible Next, sans-serif"
+headingFont = "Atkinson Hyperlegible Next, sans-serif"
+codeFont = "Atkinson Hyperlegible Mono, monospace"
+headingFontWeights = [700, 700, 600, 600, 600, 600]
+baseFontSize = 16
+chartCategoricalColors = ["#E69F00", "#56B4E9", "#009E73", "#0072B2", "#CC79A7", "#8C6D1F"]
+
+[[theme.fontFaces]]
+family = "Atkinson Hyperlegible Next"
+url = "app/static/fonts/AtkinsonHyperlegibleNext.woff2"
+weight = "200 800"
+
+[[theme.fontFaces]]
+family = "Atkinson Hyperlegible Mono"
+url = "app/static/fonts/AtkinsonHyperlegibleMono.woff2"
+weight = "200 800"
+
+[theme.sidebar]
+backgroundColor = "#111213"
+secondaryBackgroundColor = "#26282B"
+textColor = "#F2F2EE"
+borderColor = "#3A3D41"

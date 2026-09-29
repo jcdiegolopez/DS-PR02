@@ -1,0 +1,9 @@
+# Dependencias de la app (Streamlit Community Cloud las lee de aquí)
+--extra-index-url https://download.pytorch.org/whl/cpu
+streamlit>=1.50
+plotly>=6.0
+numpy>=1.26
+pandas>=2.0
+pyarrow>=14.0
+matplotlib>=3.8
+torch>=2.3
