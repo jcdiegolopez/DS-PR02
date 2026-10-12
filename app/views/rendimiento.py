@@ -38,8 +38,9 @@ if not evaluated:
     st.stop()
 
 first = metrics[evaluated[0]]
-st.markdown(f"Métricas sobre el conjunto de **validación** ({first['sequences']:,} frases de firmantes que no se usaron "
-            "para entrenar). El conjunto de prueba se evalúa una sola vez, al final.")
+split_name = "prueba" if first.get("split") == "test" else "validación"
+st.markdown(f"Métricas sobre el conjunto de **{split_name}** ({first['sequences']:,} frases de firmantes que ningún "
+            "modelo vio al entrenar ni al elegir hiperparámetros). Se evaluó una sola vez, al final.")
 
 rows = pd.DataFrame([{
     "model": k, "label": MODEL_INFO[k]["label"], "family": MODEL_INFO[k]["family"], "color": theme.MODEL_COLORS[k],

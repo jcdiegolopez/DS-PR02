@@ -85,6 +85,19 @@ class TrainingSmokeTests(unittest.TestCase):
             model = load_model("m1", output / "m1_bigru_ctc.pt")
             text = predict(model, features[0].astype(np.float32), masks[0])
             self.assertIsInstance(text, str)
+
+            from src.train import evaluate_checkpoint
+            tiny = {"m2": {"channels": 8, "levels": 2, "kernel_size": 3, "dropout": 0},
+                    "m3": {"d_model": 8, "num_layers": 1, "num_heads": 2, "ff_size": 16, "dropout": 0}}
+            for key, params in tiny.items():
+                run_training(processed, output, model=key, model_params=params, epochs=1, batch_size=2)
+                checkpoint = next(output.glob(f"{key}_*_ctc.pt"))
+                self.assertIsInstance(predict(load_model(key, checkpoint), features[0].astype(np.float32), masks[0]), str)
+                val_metrics, predictions = evaluate_checkpoint(key, checkpoint, processed, split="val")
+                self.assertEqual(len(predictions), val_metrics["sequences"])
+                self.assertEqual(set(predictions.columns), {"sequence_id", "phrase", "prediction"})
+            stored = json.loads((output / "metrics.json").read_text(encoding="utf-8"))
+            self.assertEqual(set(stored), {"m1", "m2", "m3"})
             del dataset, batch, model
             gc.collect()  # Windows mantiene abiertos los .npy mientras exista el memmap
 

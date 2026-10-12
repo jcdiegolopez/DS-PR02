@@ -1,9 +1,9 @@
-# Informe final, secciones de la Persona 1
+# Informe final: introducción, marco teórico, datos y análisis exploratorio
 
 Reconocimiento de *fingerspelling* de ASL a partir de landmarks de MediaPipe
 CC3084 Data Science, Proyecto 2: Resultados. Reto 15, *Google – American Sign Language Fingerspelling Recognition*.
 
-> Este archivo contiene la introducción, los objetivos, el marco teórico, la metodología de datos y los resultados del conjunto de datos, la limpieza y el análisis exploratorio. La selección de algoritmos, la comparación de modelos, la sección de la aplicación y las conclusiones las escriben las otras personas. Las referencias completas están en `02_referencias.md`.
+> Este archivo contiene la introducción, los objetivos, el marco teórico, la metodología de datos y los resultados del conjunto de datos, la limpieza y el análisis exploratorio. La selección de algoritmos, la comparación de modelos y las conclusiones están en `04_informe_modelos.md`; la aplicación, en `app_paleta.md`. Las referencias completas están en `02_referencias.md`.
 
 ---
 

@@ -1,4 +1,4 @@
-"""Métricas de transcripción y evaluación exclusiva del conjunto de validación."""
+"""Métricas de transcripción y evaluación de un modelo sobre un conjunto (val o test)."""
 
 from __future__ import annotations
 
@@ -90,7 +90,10 @@ def transcription_metrics(pairs: list[tuple[str, str]]) -> dict:
 
 @torch.inference_mode()
 def evaluate_loader(model, loader, device: torch.device,
-                    tokenizer: CharacterTokenizer | None = None) -> dict:
+                    tokenizer: CharacterTokenizer | None = None,
+                    records: list | None = None) -> dict:
+    """Métricas del modelo sobre el loader. Si se pasa `records`, se le agregan
+    filas (sequence_id, frase real, predicción) para análisis posteriores."""
     tokenizer = tokenizer or default_tokenizer()
     model.eval()
     pairs = []
@@ -108,6 +111,9 @@ def evaluate_loader(model, loader, device: torch.device,
         for i, reference in enumerate(batch["phrases"]):
             ids = predictions[i, :int(batch["input_lengths"][i])].tolist()
             pairs.append((reference, tokenizer.decode(ids)))
+            if records is not None:
+                records.append({"sequence_id": batch["sequence_ids"][i],
+                                    "phrase": reference, "prediction": pairs[-1][1]})
     metrics = transcription_metrics(pairs)
     metrics["inference_seconds_total"] = inference_seconds
     metrics["inference_ms_per_sequence"] = 1000 * inference_seconds / len(pairs)
