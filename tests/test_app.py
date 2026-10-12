@@ -97,7 +97,7 @@ class AppSmokeTests(unittest.TestCase):
         from streamlit.testing.v1 import AppTest
 
         real = load_metrics()["m1"]
-        fixture = {"m1": dict(real), "m2": dict(real, split="test")}
+        fixture = {"m1": dict(real, split="val"), "m2": dict(real, split="test")}
         with patch("lib.data.load_metrics", return_value=fixture):
             app = AppTest.from_file(str(ROOT / "app/views/rendimiento.py"), default_timeout=60).run()
             self.assertEqual(list(app.exception), [])
@@ -117,7 +117,7 @@ class AppSmokeTests(unittest.TestCase):
         self.assertEqual(result.text, predict(get_model("m1"), prepared.features, prepared.mask))
         self.assertEqual(len(result.frame_ids), int(prepared.mask.sum()))
         self.assertGreater(result.milliseconds, 0)
-        self.assertEqual(load_metrics()["m1"]["split"], "val")
+        self.assertEqual(load_metrics()["m1"]["split"], "test")
 
     def test_all_pages_render_and_toggles_work(self):
         from streamlit.testing.v1 import AppTest
@@ -131,7 +131,9 @@ class AppSmokeTests(unittest.TestCase):
                 app.run()
                 self.assertEqual(list(app.exception), [])
                 if name == "rendimiento":
-                    self.assertTrue(any("no son la evaluación final" in c.value for c in app.caption))
+                    expected = ("no son la evaluación final" if load_metrics()["m1"]["split"] == "val"
+                                else "Resultados registrados como test")
+                    self.assertTrue(any(expected in c.value for c in app.caption))
 
 
 if __name__ == "__main__":

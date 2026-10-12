@@ -1,58 +1,308 @@
 {
   "m1": {
-    "sequences": 3857,
-    "normalized_edit_distance": 0.2435332213786632,
-    "cer": 0.24252028028959383,
-    "competition_score": 0.7574797197104062,
-    "exact_match": 0.1311900440757065,
-    "total_edit_distance": 16682,
-    "reference_characters": 68786,
+    "sequences": 4181,
+    "normalized_edit_distance": 0.2171449455611582,
+    "cer": 0.215604173678896,
+    "competition_score": 0.7843958263211039,
+    "exact_match": 0.10882563979909113,
+    "total_edit_distance": 16014,
+    "reference_characters": 74275,
     "by_character_type": {
       "letters": {
-        "reference": 42820,
-        "errors": 10115,
-        "insertions": 432,
-        "error_rate": 0.23622139187295657
+        "reference": 44409,
+        "errors": 8600,
+        "insertions": 1012,
+        "error_rate": 0.1936544394154338
       },
       "digits": {
-        "reference": 16290,
-        "errors": 2882,
-        "insertions": 229,
-        "error_rate": 0.1769183548189073
+        "reference": 19265,
+        "errors": 3183,
+        "insertions": 654,
+        "error_rate": 0.16522190500908382
       },
       "symbols": {
-        "reference": 6383,
-        "errors": 1456,
-        "insertions": 49,
-        "error_rate": 0.22810590631364563
+        "reference": 6996,
+        "errors": 1242,
+        "insertions": 149,
+        "error_rate": 0.17753001715265868
       },
       "spaces": {
-        "reference": 3293,
-        "errors": 1432,
-        "insertions": 87,
-        "error_rate": 0.4348618281202551
+        "reference": 3605,
+        "errors": 981,
+        "insertions": 193,
+        "error_rate": 0.27212205270457696
       }
     },
-    "inference_seconds_total": 8.563006999998834,
-    "inference_ms_per_sequence": 2.220121078558163,
-    "parameters": 473405,
+    "inference_seconds_total": 3.2311539809998067,
+    "inference_ms_per_sequence": 0.7728184599377677,
+    "parameters": 1670845,
+    "split": "test",
+    "min_coverage": 0.5,
     "model": "M1 BiGRU + CTC",
-    "split": "val",
-    "best_epoch": 8,
-    "best_val_loss": 0.9989784322070556,
-    "train_sequences": 37366,
-    "val_sequences": 3857,
-    "seed": 42,
-    "resumed_from_epoch": 1,
-    "optimizer_reinitialized_on_resume": true,
+    "best_epoch": 13,
     "training_config": {
-      "epochs_requested": 8,
-      "batch_size": 16,
+      "epochs_requested": 15,
+      "batch_size": 32,
       "learning_rate": 0.001,
-      "hidden_size": 128,
-      "num_layers": 2,
-      "dropout": 0.2,
-      "min_coverage": 0.5
+      "min_coverage": 0.5,
+      "hidden_size": 192,
+      "num_layers": 3,
+      "dropout": 0.2
+    },
+    "validation": {
+      "sequences": 3857,
+      "normalized_edit_distance": 0.20495712618544146,
+      "cer": 0.20123280900183177,
+      "competition_score": 0.7987671909981682,
+      "exact_match": 0.1936738397718434,
+      "total_edit_distance": 13842,
+      "reference_characters": 68786,
+      "by_character_type": {
+        "letters": {
+          "reference": 42820,
+          "errors": 8051,
+          "insertions": 851,
+          "error_rate": 0.1880196170014012
+        },
+        "digits": {
+          "reference": 16290,
+          "errors": 2456,
+          "insertions": 240,
+          "error_rate": 0.15076734192756291
+        },
+        "symbols": {
+          "reference": 6383,
+          "errors": 1201,
+          "insertions": 68,
+          "error_rate": 0.1881560394798684
+        },
+        "spaces": {
+          "reference": 3293,
+          "errors": 815,
+          "insertions": 160,
+          "error_rate": 0.2474946856969329
+        }
+      },
+      "inference_seconds_total": 2.6362424319995625,
+      "inference_ms_per_sequence": 0.6834955747989532,
+      "parameters": 1670845,
+      "model": "M1 BiGRU + CTC",
+      "split": "val",
+      "best_epoch": 13,
+      "epochs_run": 15,
+      "stopped_by_time_limit": false,
+      "training_minutes": 20.79235016625001,
+      "best_val_loss": 0.8902467363295482,
+      "train_sequences": 37366,
+      "val_sequences": 3857,
+      "seed": 42,
+      "resumed_from_epoch": null,
+      "optimizer_reinitialized_on_resume": false
+    }
+  },
+  "m2": {
+    "sequences": 4181,
+    "normalized_edit_distance": 0.2471527528363708,
+    "cer": 0.24679905755637832,
+    "competition_score": 0.7532009424436217,
+    "exact_match": 0.08132025831140875,
+    "total_edit_distance": 18331,
+    "reference_characters": 74275,
+    "by_character_type": {
+      "letters": {
+        "reference": 44409,
+        "errors": 9959,
+        "insertions": 508,
+        "error_rate": 0.22425634443468667
+      },
+      "digits": {
+        "reference": 19265,
+        "errors": 3883,
+        "insertions": 482,
+        "error_rate": 0.20155722813392163
+      },
+      "symbols": {
+        "reference": 6996,
+        "errors": 1528,
+        "insertions": 137,
+        "error_rate": 0.21841052029731275
+      },
+      "spaces": {
+        "reference": 3605,
+        "errors": 1642,
+        "insertions": 192,
+        "error_rate": 0.4554785020804438
+      }
+    },
+    "inference_seconds_total": 1.4737783209911868,
+    "inference_ms_per_sequence": 0.35249421693163996,
+    "parameters": 1136701,
+    "split": "test",
+    "min_coverage": 0.5,
+    "model": "M2 TCN + CTC",
+    "best_epoch": 10,
+    "training_config": {
+      "epochs_requested": 15,
+      "batch_size": 32,
+      "learning_rate": 0.001,
+      "min_coverage": 0.5,
+      "channels": 192,
+      "levels": 6,
+      "kernel_size": 5,
+      "dropout": 0.2
+    },
+    "validation": {
+      "sequences": 3857,
+      "normalized_edit_distance": 0.2319915869861015,
+      "cer": 0.22849126275695636,
+      "competition_score": 0.7715087372430436,
+      "exact_match": 0.14596836919885922,
+      "total_edit_distance": 15717,
+      "reference_characters": 68786,
+      "by_character_type": {
+        "letters": {
+          "reference": 42820,
+          "errors": 9186,
+          "insertions": 412,
+          "error_rate": 0.21452592246613733
+        },
+        "digits": {
+          "reference": 16290,
+          "errors": 2932,
+          "insertions": 153,
+          "error_rate": 0.17998772252915898
+        },
+        "symbols": {
+          "reference": 6383,
+          "errors": 1361,
+          "insertions": 76,
+          "error_rate": 0.21322262259125802
+        },
+        "spaces": {
+          "reference": 3293,
+          "errors": 1388,
+          "insertions": 209,
+          "error_rate": 0.4215001518372305
+        }
+      },
+      "inference_seconds_total": 1.327630729007069,
+      "inference_ms_per_sequence": 0.3442133080132406,
+      "parameters": 1136701,
+      "model": "M2 TCN + CTC",
+      "split": "val",
+      "best_epoch": 10,
+      "epochs_run": 13,
+      "stopped_by_time_limit": false,
+      "training_minutes": 11.427326291849992,
+      "best_val_loss": 0.9429340510903661,
+      "train_sequences": 37366,
+      "val_sequences": 3857,
+      "seed": 42,
+      "resumed_from_epoch": null,
+      "optimizer_reinitialized_on_resume": false
+    }
+  },
+  "m3": {
+    "sequences": 4181,
+    "normalized_edit_distance": 0.2559389165094248,
+    "cer": 0.25730057219791314,
+    "competition_score": 0.7426994278020869,
+    "exact_match": 0.05548911743602009,
+    "total_edit_distance": 19111,
+    "reference_characters": 74275,
+    "by_character_type": {
+      "letters": {
+        "reference": 44409,
+        "errors": 10315,
+        "insertions": 856,
+        "error_rate": 0.23227273750816277
+      },
+      "digits": {
+        "reference": 19265,
+        "errors": 3827,
+        "insertions": 615,
+        "error_rate": 0.1986504022839346
+      },
+      "symbols": {
+        "reference": 6996,
+        "errors": 1599,
+        "insertions": 118,
+        "error_rate": 0.2285591766723842
+      },
+      "spaces": {
+        "reference": 3605,
+        "errors": 1629,
+        "insertions": 152,
+        "error_rate": 0.45187239944521496
+      }
+    },
+    "inference_seconds_total": 2.9506787929913116,
+    "inference_ms_per_sequence": 0.7057351812942625,
+    "parameters": 1216189,
+    "split": "test",
+    "min_coverage": 0.5,
+    "model": "M3 Transformer + CTC",
+    "best_epoch": 15,
+    "training_config": {
+      "epochs_requested": 15,
+      "batch_size": 32,
+      "learning_rate": 0.0005,
+      "min_coverage": 0.5,
+      "d_model": 192,
+      "num_layers": 4,
+      "num_heads": 4,
+      "ff_size": 384,
+      "dropout": 0.1
+    },
+    "validation": {
+      "sequences": 3857,
+      "normalized_edit_distance": 0.23501496011187037,
+      "cer": 0.23379757508795396,
+      "competition_score": 0.766202424912046,
+      "exact_match": 0.12315270935960591,
+      "total_edit_distance": 16082,
+      "reference_characters": 68786,
+      "by_character_type": {
+        "letters": {
+          "reference": 42820,
+          "errors": 9309,
+          "insertions": 727,
+          "error_rate": 0.2173984119570294
+        },
+        "digits": {
+          "reference": 16290,
+          "errors": 2963,
+          "insertions": 234,
+          "error_rate": 0.18189073050951504
+        },
+        "symbols": {
+          "reference": 6383,
+          "errors": 1341,
+          "insertions": 78,
+          "error_rate": 0.21008929970233434
+        },
+        "spaces": {
+          "reference": 3293,
+          "errors": 1306,
+          "insertions": 124,
+          "error_rate": 0.39659884603704826
+        }
+      },
+      "inference_seconds_total": 2.5717946630084043,
+      "inference_ms_per_sequence": 0.6667862750864414,
+      "parameters": 1216189,
+      "model": "M3 Transformer + CTC",
+      "split": "val",
+      "best_epoch": 15,
+      "epochs_run": 15,
+      "stopped_by_time_limit": false,
+      "training_minutes": 24.261850228216645,
+      "best_val_loss": 0.9467479724911232,
+      "train_sequences": 37366,
+      "val_sequences": 3857,
+      "seed": 42,
+      "resumed_from_epoch": null,
+      "optimizer_reinitialized_on_resume": false
     }
   }
 }

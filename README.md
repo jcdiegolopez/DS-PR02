@@ -1,6 +1,6 @@
 # ASL Fingerspelling — resultados
 
-El notebook [`notebooks/Proyecto2_Resultados_Master.ipynb`](notebooks/Proyecto2_Resultados_Master.ipynb) prepara las secuencias del reto de Kaggle y entrena el primer modelo BiGRU + CTC. El preprocesamiento es compartido por el notebook y la aplicación mediante `src/preprocessing.py`.
+El notebook [`notebooks/Proyecto2_Resultados_Master.ipynb`](notebooks/Proyecto2_Resultados_Master.ipynb) prepara las secuencias del reto de Kaggle, ajusta y entrena tres modelos CTC (M1 BiGRU, M2 TCN y M3 Transformer) y los compara en el conjunto de prueba. En Kaggle (con GPU) entrena; en local carga los resultados guardados en `models/` y regenera tablas y figuras (`reports/figures/`). El preprocesamiento es compartido por el notebook y la aplicación mediante `src/preprocessing.py`.
 
 ## Datos procesados
 
@@ -12,18 +12,26 @@ kaggle kernels output diegolcc/asl-fingerspelling-resultados -p data --file-patt
 
 Los cuatro archivos deben quedar en `data/processed/`. Esta carpeta está excluida de Git. El kernel fuente es privado y requiere acceso a él.
 
-## Entrenar y evaluar M1
+## Entrenar y evaluar los modelos
+
+El flujo completo (búsqueda de hiperparámetros, entrenamiento final y evaluación en test) está en las Partes II y III del notebook. Para entrenar un modelo suelto desde la terminal:
 
 ```powershell
 python -m pip install -r requirements.txt
-python -m src.train --processed-dir data/processed --output-dir models --epochs 8 --batch-size 16
+python -m src.train --processed-dir data/processed --output-dir models --model m2 --epochs 15 --batch-size 32 --max-minutes 30
 ```
 
-Si se interrumpe tras una época completa, el estado de entrenamiento se conserva en `models/m1_last.pt`. Para continuar hasta el número total de épocas indicado, agrega `--resume` al comando. Un checkpoint antiguo que solo contiene pesos también se puede retomar; en ese caso AdamW se reinicia.
+`--model` acepta `m1`, `m2` o `m3`. Si se interrumpe tras una época completa, el estado se conserva en `models/<modelo>_last.pt` y se puede continuar con `--resume`. El entrenamiento usa `train` para actualizar pesos y `val` para seleccionar el checkpoint; `test` solo se evalúa una vez, con `src.train.evaluate_checkpoint`. `src/models.py` expone `load_model` y `predict` para la aplicación.
 
-El entrenamiento usa únicamente `train` para actualizar pesos y `val` para seleccionar el checkpoint. No evalúa `test`. Guarda `models/m1_bigru_ctc.pt`, `models/m1_history.csv` y `models/metrics.json`. Este último incluye distancia de edición normalizada, CER, coincidencia exacta, errores por tipo de carácter, latencia y número de parámetros. `src/models.py` expone `load_model` y `predict` para la aplicación.
+Resultados finales en prueba (4,181 frases de 10 participantes no vistos; entrenamiento en Kaggle con GPU T4):
 
-La corrida inicial sobre el conjunto procesado completo usó 37 366 secuencias de entrenamiento y 3 857 de validación. El mejor checkpoint fue el de la época 8: distancia de edición normalizada **0,2435**, CER **0,2425**, coincidencia exacta **13,12 %** y **473 405** parámetros. La primera época se recuperó desde un checkpoint que solo tenía pesos, por lo que AdamW se reinició al comenzar la segunda. El historial conserva la pérdida de validación de esa primera época, pero no su pérdida de entrenamiento.
+| Modelo | Distancia de edición | CER | Frases exactas | Parámetros |
+|---|---|---|---|---|
+| **M1 BiGRU + CTC** | **0.217** | **0.216** | **10.9%** | 1.67 M |
+| M2 TCN + CTC | 0.247 | 0.247 | 8.1% | 1.14 M |
+| M3 Transformer + CTC | 0.256 | 0.257 | 5.6% | 1.22 M |
+
+El análisis completo está en [`reports/04_informe_modelos.md`](reports/04_informe_modelos.md).
 
 Pruebas de los contratos de CTC y del flujo de entrenamiento:
 
@@ -40,7 +48,7 @@ streamlit run app/app.py
 
 Se ejecuta desde la raíz del repositorio. Tiene tres páginas: **Explorar datos** (muestras limpias, metadatos del corpus original, calidad por mano y canales normalizados), **Predecir** (secuencia cruda de prueba o archivo subido, preprocesamiento automático, animación y transcripción por uno o varios modelos) y **Rendimiento** (comparación desde `models/metrics.json`, controles para ocultar gráficas y benchmark local). Las predicciones y métricas se pueden descargar en CSV. Todo corre en CPU.
 
-Un checkpoint cargable activa el modelo en **Predecir**. Su entrada en `metrics.json` activa sus resultados en **Rendimiento**; no es necesario tener métricas agregadas para transcribir. El repositorio contiene pesos reales de M1 y métricas de **validación**, no resultados finales de test. TCN y Transformer ya tienen soporte de carga e inferencia, pero requieren sus checkpoints finales. Los resultados de distintos splits o tamaños se muestran por separado.
+Un checkpoint cargable activa el modelo en **Predecir**. Su entrada en `metrics.json` activa sus resultados en **Rendimiento**; no es necesario tener métricas agregadas para transcribir. El repositorio contiene los pesos finales de M1, M2 y M3 y sus métricas de **prueba** (con las de validación anidadas en `validation`). Los resultados de distintos splits o tamaños se muestran por separado.
 
 Para Streamlit Community Cloud, el archivo principal es `app/app.py` y las dependencias se leen de `app/requirements.txt`. La paleta y la tipografía están justificadas en [`reports/app_paleta.md`](reports/app_paleta.md).
 
