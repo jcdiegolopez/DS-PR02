@@ -24,14 +24,22 @@ def prepared_sample(file_name: str):
     return prepare(load_sample(file_name))
 
 
-meta = load_metadata()
-by_split = meta.groupby("split")["participant_id"].nunique()
-
 st.title("Qué hay en los datos")
+corpus = load_metadata()
+manifest = load_manifest()
+scope = st.segmented_control("Datos para explorar", ["Muestras limpias", "Corpus original"], default="Muestras limpias")
+if scope == "Muestras limpias":
+    meta = corpus[corpus["sequence_id"].isin(manifest["sequence_id"])].copy()
+    st.caption(f"{len(meta)} secuencias de muestra con limpieza compartida y landmarks normalizados. "
+               "Las distribuciones de frases corresponden a esta muestra de test, no a todo el entrenamiento.")
+else:
+    meta = corpus
+    st.caption("Metadatos originales de train.csv para contextualizar el EDA. La limpieza de landmarks se muestra abajo.")
+by_split = corpus.groupby("split")["participant_id"].nunique()
 st.html(
     '<p class="figline">'
     f'<b>{len(meta):,}</b> frases deletreadas por <b>{meta["participant_id"].nunique()}</b> firmantes, '
-    f'con <b>{int(meta["phrase_length"].sum()):,}</b> caracteres en total. La partición separa firmantes, no frases: '
+    f'con <b>{int(meta["phrase_length"].sum()):,}</b> caracteres en esta selección. La partición completa separa firmantes: '
     f'<b>{by_split["train"]}</b> para entrenar, <b>{by_split["val"]}</b> para validar y <b>{by_split["test"]}</b> para la prueba final.</p>'
 )
 
@@ -40,10 +48,10 @@ chars = pd.Series(list(meta["phrase"].str.cat()))
 shares = chars.map(category_of).value_counts(normalize=True)
 rare = chars.value_counts(normalize=True)
 rare_symbols = [c for c in rare.index if category_of(c) == "símbolos" and rare[c] < 0.001]
-st.header(f"Las letras son {shares['letras']:.0%} del texto; los símbolos, apenas {shares['símbolos']:.1%}")
+st.header(f"Las letras son {shares.get('letras', 0):.0%} del texto; los símbolos, {shares.get('símbolos', 0):.1%}")
 st.markdown(
-    f"Los dígitos ocupan {shares['dígitos']:.0%} porque muchas frases son teléfonos y direcciones. "
-    f"{len(rare_symbols)} símbolos aparecen en menos de una de cada mil posiciones: el modelo casi no los ve al entrenar."
+    f"Los dígitos ocupan {shares.get('dígitos', 0):.0%}; algunas frases son teléfonos y direcciones. "
+    f"{len(rare_symbols)} símbolos aparecen en menos de una de cada mil posiciones de esta selección."
 )
 st.plotly_chart(charts.char_frequency(meta, category_of), config={"displayModeBar": False})
 if st.toggle("Mostrar la tabla de frecuencias"):
@@ -58,8 +66,8 @@ if st.toggle("Mostrar la tabla de frecuencias"):
 # ------------------------------------------------------------------ longitudes
 lengths = meta["phrase_length"]
 st.header(f"La mitad de las frases tiene {lengths.median():.0f} caracteres o menos")
-st.markdown(f"Van de {lengths.min()} a {lengths.max()} caracteres. CTC necesita al menos un frame por carácter, "
-            "así que las frases largas con secuencias cortas son las más difíciles de alinear.")
+st.markdown(f"Van de {lengths.min()} a {lengths.max()} caracteres. CTC necesita al menos un frame por carácter "
+            "y uno adicional por cada repetición adyacente; una secuencia demasiado corta no puede alinearse.")
 st.plotly_chart(charts.phrase_lengths(meta), config={"displayModeBar": False})
 
 # ------------------------------------------------------------------ participantes
@@ -72,9 +80,8 @@ st.plotly_chart(charts.participants(meta, highlight), config={"displayModeBar": 
 
 # ------------------------------------------------------------------ una secuencia
 st.header("Una secuencia por dentro")
-manifest = load_manifest()
 labels = {row.file: row.phrase for row in manifest.itertuples()}
-choice = st.selectbox("Secuencia de prueba", list(labels), format_func=labels.get, index=2, key="explore-seq")
+choice = st.selectbox("Secuencia de prueba", list(labels), format_func=labels.get, index=min(2, len(labels) - 1), key="explore-seq")
 raw = load_sample(choice)
 prepared = prepared_sample(choice)
 coverage = manifest.set_index("file").loc[choice, "coverage"]
@@ -83,13 +90,25 @@ st.markdown(f"La mano activa es la **{hand}** y queda útil en **{coverage:.0%}*
             "MediaPipe detectó cada parte del cuerpo; los huecos son pérdidas de tracking que el preprocesamiento recorta, "
             "interpola o marca como inválidas.")
 st.plotly_chart(charts.presence_strip(raw), config={"displayModeBar": False})
-st.markdown("Trayectoria de la punta del índice respecto a la muñeca, ya normalizada. Cada cambio brusco es un "
-            "cambio de letra.")
+st.markdown("Trayectoria de la punta del índice respecto a la muñeca, ya normalizada. Los cambios bruscos pueden "
+            "reflejar movimientos de la mano o pérdidas de tracking; no delimitan por sí solos una letra.")
 st.plotly_chart(charts.trajectory(prepared, theme.MODEL_COLORS["m1"]), config={"displayModeBar": False})
+if prepared.mask.any() and st.toggle("Mostrar los canales normalizados de la mano", value=False):
+    st.caption("Distancia de cada landmark a la muñeca, en escalas de palma. El azul más oscuro indica una magnitud mayor.")
+    st.plotly_chart(charts.hand_distances(prepared), config={"displayModeBar": False})
+if prepared.mask.any() and st.toggle("Mostrar el esqueleto animado", value=False):
+    st.plotly_chart(charts.playback(prepared, None, theme.INK), config={"displayModeBar": False})
 
-with st.expander("Cobertura de la mano en las 30 secuencias de prueba"):
+with st.expander(f"Cobertura de la mano en las {len(manifest)} secuencias de muestra"):
     cov = manifest["coverage"]
     st.markdown(f"Mediana **{cov.median():.0%}**; {int((cov < 0.5).sum())} de {len(cov)} quedan por debajo del 50% "
                 "que el análisis exploratorio proponía como umbral de descarte.")
     st.bar_chart(manifest.sort_values("coverage").set_index("phrase")["coverage"], color=theme.INK,
                  horizontal=True, height=560, x_label="cobertura de la mano activa", y_label="")
+    quality = pd.DataFrame([{"mano": "derecha" if (p := prepared_sample(row.file)).hand == "right_hand" else "izquierda",
+                             "cobertura": float(p.mask.mean()) if len(p.mask) else 0.0}
+                            for row in manifest.itertuples()])
+    st.caption("Calidad por mano activa en las muestras, después de la limpieza; no representa todo el corpus.")
+    st.dataframe(quality.groupby("mano").agg(muestras=("cobertura", "size"),
+                                            cobertura_mediana=("cobertura", "median")),
+                 column_config={"cobertura_mediana": st.column_config.NumberColumn(format="percent")})

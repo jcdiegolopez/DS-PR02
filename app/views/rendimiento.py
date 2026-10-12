@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 
 from lib import charts, theme
-from lib.data import MODEL_INFO, available_models, load_history, load_manifest, load_metadata, load_metrics, load_sample
+from lib.data import MODEL_INFO, InputError, available_models, load_history, load_manifest, load_metadata, load_metrics, load_sample
 from lib.inference import prepare, transcribe
 
 
@@ -28,7 +28,11 @@ def category_of(char: str) -> str:
 
 ARTICLE = {"letras": "las letras", "dígitos": "los dígitos", "símbolos": "los símbolos", "espacios": "los espacios"}
 
-metrics = load_metrics()
+try:
+    metrics = load_metrics()
+except InputError as exc:
+    st.error(str(exc))
+    st.stop()
 evaluated = [k for k in MODEL_INFO if k in metrics]
 pending = [k for k in MODEL_INFO if k not in metrics]
 
@@ -37,10 +41,27 @@ if not evaluated:
     st.info("Todavía no hay métricas en models/metrics.json.")
     st.stop()
 
+cohorts = list(dict.fromkeys((metrics[k]["split"], metrics[k]["sequences"]) for k in evaluated))
+if len(cohorts) > 1:
+    st.info("Hay resultados de distintos conjuntos o tamaños. Elige un grupo para compararlo por separado.")
+    cohort = st.selectbox("Conjunto evaluado", cohorts,
+                          format_func=lambda v: f"{'Prueba' if v[0] == 'test' else 'Validación'} · {v[1]:,} frases")
+    evaluated = [k for k in evaluated if (metrics[k]["split"], metrics[k]["sequences"]) == cohort]
+evaluated = st.multiselect("Modelos para comparar", evaluated, default=evaluated,
+                          format_func=lambda k: MODEL_INFO[k]["label"])
+if not evaluated:
+    st.info("Selecciona al menos un modelo para ver sus métricas.")
+    st.stop()
 first = metrics[evaluated[0]]
 split_name = "prueba" if first.get("split") == "test" else "validación"
-st.markdown(f"Métricas sobre el conjunto de **{split_name}** ({first['sequences']:,} frases de firmantes que ningún "
-            "modelo vio al entrenar ni al elegir hiperparámetros). Se evaluó una sola vez, al final.")
+st.markdown(f"Métricas sobre el conjunto de **{split_name}** ({first['sequences']:,} frases de firmantes separados "
+            "de los de entrenamiento).")
+if first["split"] == "val":
+    st.caption("La validación se usa para seleccionar checkpoints e hiperparámetros. Estos resultados no son la evaluación final en test.")
+else:
+    st.caption("Resultados registrados como test en metrics.json. Consulta el notebook para el protocolo de evaluación.")
+if len(evaluated) == 1:
+    st.info("Solo hay métricas de un modelo en este conjunto; aún no se puede determinar cuál de las tres arquitecturas rinde mejor.")
 
 rows = pd.DataFrame([{
     "model": k, "label": MODEL_INFO[k]["label"], "family": MODEL_INFO[k]["family"], "color": theme.MODEL_COLORS[k],
@@ -58,12 +79,14 @@ body = "".join(
     for r in rows.itertuples())
 body += "".join(
     f'<tr><td>{theme.model_mark(k, MODEL_INFO[k]["label"])}</td><td>{MODEL_INFO[k]["family"]}</td>'
-    f'<td class="num pending" colspan="4">pendiente de entrenamiento</td></tr>' for k in pending)
+    f'<td class="num pending" colspan="4">sin métricas registradas</td></tr>' for k in pending)
 st.html('<table class="cmp"><thead><tr><th>Modelo</th><th>Arquitectura</th><th class="num">Distancia de edición</th>'
         '<th class="num">CER</th><th class="num">Frase exacta</th><th class="num">Parámetros</th></tr></thead>'
         f"<tbody>{body}</tbody></table>")
 st.caption("Distancia de edición: promedio por frase de las ediciones necesarias dividido entre su longitud. "
            "CER: ediciones totales entre caracteres totales. Ambas: menor es mejor.")
+st.download_button("Descargar métricas", rows.drop(columns=["color"]).to_csv(index=False).encode("utf-8-sig"),
+                   file_name="metricas.csv", mime="text/csv")
 
 if st.toggle("Mostrar las métricas globales en gráfica", value=True):
     c1, c2, c3 = st.columns(3)
@@ -79,7 +102,10 @@ for k in evaluated:
                          "categoría": theme.CATEGORY_KEYS[key], "error": value["error_rate"],
                          "referencia": value["reference"]})
 cats = pd.DataFrame(cat_rows)
-lead = cats[cats["model"] == rows.loc[rows["ned"].idxmin(), "model"]].set_index("categoría")
+lead = cats[(cats["model"] == rows.loc[rows["ned"].idxmin(), "model"]) & (cats["referencia"] > 0)].set_index("categoría")
+if lead.empty:
+    st.info("No hay caracteres de referencia para analizar errores por categoría.")
+    st.stop()
 worst = lead["error"].idxmax()
 st.header(f"Lo que más falla son {ARTICLE[worst]}: {lead.loc[worst, 'error']:.0%} de error")
 best_cat = lead["error"].idxmin()
@@ -125,8 +151,8 @@ if histories:
     for k, h in histories.items():
         tail = h["val_loss"].dropna().tail(2).to_numpy()
         if len(tail) == 2 and tail[1] < tail[0]:
-            notes.append(f"{MODEL_INFO[k]['label']} seguía mejorando en su última época ({len(h)}): con más épocas "
-                         "probablemente baja más.")
+            notes.append(f"{MODEL_INFO[k]['label']} redujo su pérdida de validación entre las dos últimas épocas "
+                         f"registradas ({len(h)} épocas). Eso no garantiza mejoras con más entrenamiento.")
     st.markdown(" ".join(notes) or "Pérdida CTC por época en entrenamiento (punteada) y validación (continua).")
     if st.toggle("Mostrar las curvas", value=True):
         st.plotly_chart(charts.training_curves(histories, {k: MODEL_INFO[k]["label"] for k in histories}),
@@ -134,8 +160,9 @@ if histories:
 
 # ------------------------------------------------------------------ eficiencia
 st.header("Costo contra calidad")
-st.markdown("La app corre en CPU, así que el tiempo que importa es el de esta máquina. El botón transcribe las "
-            f"{len(load_manifest())} secuencias de prueba con cada modelo y mide el promedio.")
+st.markdown("El botón mide solo inferencia y decodificación en CPU sobre las "
+            f"{len(load_manifest())} muestras, con una llamada de calentamiento por modelo. Excluye carga y limpieza; "
+            "no recalcula las métricas de test.")
 ready = [k for k in available_models() if k in evaluated]
 if st.button("Medir en esta máquina", type="primary", disabled=not ready):
     manifest = load_manifest()
@@ -145,13 +172,19 @@ if st.button("Medir en esta máquina", type="primary", disabled=not ready):
     done = 0
     for k in ready:
         ms = []
+        warmed = False
         for file_name in manifest["file"]:
             prepared = prepared_sample(file_name)
-            transcribe(k, prepared)  # calentamiento de la primera llamada
+            if not prepared.mask.any():
+                continue
+            if not warmed:
+                transcribe(k, prepared)
+                warmed = True
             ms.append(transcribe(k, prepared).milliseconds)
             done += 1
             progress.progress(done / total, text=f"Midiendo {MODEL_INFO[k]['label']}")
-        timings[k] = float(np.mean(ms))
+        if ms:
+            timings[k] = float(np.mean(ms))
     progress.empty()
     st.session_state["cpu_ms"] = timings
 

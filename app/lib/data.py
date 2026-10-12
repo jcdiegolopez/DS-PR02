@@ -19,7 +19,7 @@ SAMPLES_DIR = ROOT / "app" / "sample_sequences"
 MODEL_INFO = {
     "m1": {"label": "M1 BiGRU", "family": "Recurrente bidireccional"},
     "m2": {"label": "M2 TCN", "family": "Convolución temporal"},
-    "m3": {"label": "M3 Transformer", "family": "Atención (Transformer / Conformer)"},
+    "m3": {"label": "M3 Transformer", "family": "Atención (Transformer)"},
 }
 
 # Misma partición que el notebook de resultados (Parte I, sección 1)
@@ -63,23 +63,43 @@ def read_upload(name: str, payload: bytes) -> pd.DataFrame:
     try:
         if name.lower().endswith(".csv"):
             raw = pd.read_csv(io.BytesIO(payload))
-        else:
+        elif name.lower().endswith(".parquet"):
             raw = pd.read_parquet(io.BytesIO(payload))
+        else:
+            raise InputError("Usa un archivo CSV o Parquet.")
+    except InputError:
+        raise
     except Exception as exc:  # noqa: BLE001 - cualquier fallo de lectura es un archivo inválido
         raise InputError(f"No se pudo leer el archivo como {'CSV' if name.lower().endswith('.csv') else 'Parquet'}.") from exc
     if raw.index.name == "sequence_id":
         raw = raw.reset_index()
-    if "sequence_id" in raw.columns and raw["sequence_id"].nunique() > 1:
-        first = raw["sequence_id"].iloc[0]
-        raw = raw[raw["sequence_id"] == first]
-        st.info(f"El archivo trae varias secuencias; se usa la primera ({first}).")
-    hand_cols = [f"{a}_{h}_{i}" for h in ("left_hand", "right_hand") for a in "xyz" for i in range(21)]
-    present = [c for c in hand_cols if c in raw.columns]
-    if len(present) < 63:
-        raise InputError("El archivo no tiene las columnas de landmarks de mano del formato Kaggle "
-                         "(por ejemplo x_right_hand_0 ... z_right_hand_20).")
     if len(raw) == 0:
         raise InputError("El archivo no tiene frames.")
+    if len(raw) > 10000:
+        raise InputError("El archivo supera 10 000 frames; divide las secuencias antes de subirlo.")
+    if "sequence_id" in raw.columns and raw["sequence_id"].isna().any():
+        raise InputError("Hay frames sin sequence_id; completa su identificador.")
+    complete_hand = any(all(f"{a}_{h}_{i}" in raw.columns for a in "xyz" for i in range(21))
+                        for h in ("left_hand", "right_hand"))
+    if not complete_hand:
+        raise InputError("El archivo no tiene las columnas de landmarks de mano del formato Kaggle "
+                         "(por ejemplo x_right_hand_0 ... z_right_hand_20).")
+    coordinate_cols = [c for c in raw.columns if c.startswith(("x_", "y_", "z_"))]
+    try:
+        raw[coordinate_cols] = raw[coordinate_cols].apply(pd.to_numeric, errors="raise")
+        if np.isinf(raw[coordinate_cols].to_numpy(dtype=float)).any():
+            raise InputError("Las coordenadas contienen valores infinitos.")
+        if "frame" in raw.columns:
+            raw["frame"] = pd.to_numeric(raw["frame"], errors="raise")
+            if not np.isfinite(raw["frame"].to_numpy(dtype=float)).all():
+                raise InputError("La columna frame debe contener números finitos.")
+            keys = ["sequence_id", "frame"] if "sequence_id" in raw.columns else ["frame"]
+            if raw.duplicated(keys).any():
+                raise InputError("Hay frames repetidos dentro de una secuencia.")
+    except (ValueError, TypeError) as exc:
+        if isinstance(exc, InputError):
+            raise
+        raise InputError("Las coordenadas y frame deben ser numéricos; los landmarks ausentes pueden quedar vacíos.") from exc
     return raw
 
 
@@ -98,7 +118,30 @@ def load_metrics() -> dict:
     path = MODELS_DIR / "metrics.json"
     if not path.exists():
         return {}
-    return json.loads(path.read_text(encoding="utf-8"))
+    try:
+        metrics = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise InputError("No se pudo leer metrics.json. Revisa que contenga JSON válido.") from exc
+    if not isinstance(metrics, dict):
+        raise InputError("metrics.json debe contener un objeto con entradas m1, m2 y m3.")
+    for key in MODEL_INFO.keys() & metrics.keys():
+        entry = metrics[key]
+        try:
+            if entry["split"] not in ("val", "test") or entry["sequences"] <= 0:
+                raise ValueError
+            for field in ("normalized_edit_distance", "cer", "exact_match", "parameters"):
+                value = entry[field]
+                if not np.isfinite(value) or value < 0:
+                    raise ValueError
+            if entry["exact_match"] > 1:
+                raise ValueError
+            for category in ("letters", "digits", "symbols", "spaces"):
+                values = entry["by_character_type"][category]
+                if values["reference"] < 0 or not np.isfinite(values["error_rate"]) or values["error_rate"] < 0:
+                    raise ValueError
+        except (KeyError, TypeError, ValueError) as exc:
+            raise InputError(f"Las métricas de {MODEL_INFO[key]['label']} están incompletas o son inválidas.") from exc
+    return metrics
 
 
 @st.cache_data(show_spinner=False)

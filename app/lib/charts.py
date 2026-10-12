@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from html import escape
 
 import numpy as np
 import pandas as pd
@@ -82,7 +83,7 @@ def playback(prepared: Prepared, tr: Transcription | None, color: str) -> go.Fig
     def annotations(t: int) -> list[dict]:
         text = so_far[t]
         return [
-            dict(text=f"<b>{text[-34:]}</b>" if text else "", x=0.5, y=0.25, xref="paper", yref="paper",
+            dict(text=f"<b>{escape(text[-34:])}</b>" if text else "", x=0.5, y=0.25, xref="paper", yref="paper",
                  showarrow=False, font=dict(family=theme.MONO, size=24, color=theme.CAPTION_FG),
                  bgcolor=theme.CAPTION_BG if text else "rgba(0,0,0,0)", borderpad=10,
                  xanchor="center", yanchor="bottom"),
@@ -181,6 +182,20 @@ def trajectory(prepared: Prepared, color: str) -> go.Figure:
     fig.add_trace(go.Scatter(x=t, y=tip[:, 0], name="x (índice)", line=dict(color=theme.INK, width=2)))
     fig.add_trace(go.Scatter(x=t, y=-tip[:, 1], name="y (índice)", line=dict(color=color, width=2)))
     fig.update_layout(height=260, xaxis_title="frame válido", yaxis_title="posición relativa a la muñeca")
+    return fig
+
+
+def hand_distances(prepared: Prepared) -> go.Figure:
+    """Magnitud de los canales normalizados de la mano; escala secuencial de luminancia."""
+    hand = prepared.valid[:, :63].reshape(-1, 21, 3)
+    distances = np.linalg.norm(hand, axis=2).T
+    fig = go.Figure(go.Heatmap(
+        z=distances, x=np.arange(distances.shape[1]), y=np.arange(21), zmin=0,
+        colorscale=[[0, "#F7FBFF"], [0.25, "#C6DBEF"], [0.5, "#6BAED6"],
+                    [0.75, "#2171B5"], [1, "#08306B"]],
+        colorbar=dict(title="escalas de palma"),
+        hovertemplate="frame válido %{x}<br>landmark %{y}<br>distancia %{z:.2f}<extra></extra>"))
+    fig.update_layout(height=360, xaxis_title="frame válido", yaxis_title="landmark de la mano")
     return fig
 
 

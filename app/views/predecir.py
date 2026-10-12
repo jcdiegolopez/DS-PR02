@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from html import escape
 
+import pandas as pd
 import streamlit as st
 
 from lib import captions, charts, theme
@@ -33,14 +34,19 @@ with controls:
         if source == "Subir archivo":
             upload = st.file_uploader("Archivo Parquet o CSV de una secuencia", type=["parquet", "csv"],
                                       help="Columnas como x_right_hand_0 ... z_right_hand_20; la pose y la cara son opcionales.")
-            reference = st.text_input("Frase real (opcional, para comparar)", max_chars=120).strip().lower()
+            reference = st.text_input("Frase real (opcional, para comparar)", max_chars=120)
             if upload is not None:
                 raw = read_upload(upload.name, upload.getvalue())
+                if "sequence_id" in raw.columns and raw["sequence_id"].nunique() > 1:
+                    sequence = st.selectbox("Secuencia del archivo", raw["sequence_id"].unique())
+                    raw = raw.loc[raw["sequence_id"] == sequence]
                 prepared = prepare(raw)
                 tag = escape(upload.name)
         else:
             labels = {row.file: row.phrase for row in manifest.itertuples()}
-            choice = st.selectbox("Secuencia de prueba", list(labels), format_func=labels.get, index=2)
+            if not labels:
+                raise InputError("No hay muestras disponibles. Usa la opción Subir archivo.")
+            choice = st.selectbox("Secuencia de prueba", list(labels), format_func=labels.get, index=min(2, len(labels) - 1))
             row = manifest.set_index("file").loc[choice]
             reference = row.phrase
             prepared = prepared_sample(choice)
@@ -80,7 +86,12 @@ with stage:
     if prepared.mask.sum() < max(len(reference), 8):
         st.warning("La mano aparece en muy pocos frames; la transcripción puede quedar incompleta.")
 
-    results = [transcribe(key, prepared) for key in (chosen or [])]
+    results = []
+    for key in chosen or []:
+        try:
+            results.append(transcribe(key, prepared))
+        except Exception:
+            st.error(f"No se pudo transcribir con {MODEL_INFO[key]['label']}. Revisa sus pesos o elige otro modelo.")
     lead = results[0] if results else None
     lead_color = theme.MODEL_COLORS.get(lead.key, theme.INK) if lead else theme.INK
     st.plotly_chart(charts.playback(prepared, lead, lead_color), config={"displayModeBar": False},
@@ -103,3 +114,12 @@ with stage:
                     f'<div class="cap-line">{escape(tr.text) or "(sin texto)"}</div></div>')
     if reference:
         st.html(captions.legend())
+    table = pd.DataFrame([{
+        "modelo": MODEL_INFO[tr.key]["label"], "frase_real": reference,
+        "prediccion": tr.text, "ediciones": captions.edit_distance(reference, tr.text) if reference else None,
+        "distancia_normalizada": captions.edit_distance(reference, tr.text) / len(reference) if reference else None,
+        "tiempo_cpu_ms": round(tr.milliseconds, 2),
+    } for tr in results])
+    st.dataframe(table, hide_index=True)
+    st.download_button("Descargar predicciones", table.to_csv(index=False).encode("utf-8-sig"),
+                       file_name="predicciones.csv", mime="text/csv")
