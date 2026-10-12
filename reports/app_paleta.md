@@ -11,6 +11,7 @@ La paleta es **restringida**: neutros para todo lo que es interfaz y color solo 
 | Neutros y subtítulo | Acromática | Fondo, texto, estructura y cajas de subtítulo |
 | Modelos (M1, M2, M3) | Categórica | Identifica un modelo en todas las páginas y gráficas |
 | Tipos de carácter | Categórica | Letras, dígitos, símbolos y espacios en el análisis del corpus |
+| Magnitud de los canales | Secuencial | Distancia de landmarks a la muñeca en coordenadas normalizadas |
 
 A eso se suman dos colores **reservados** con un solo significado cada uno: el amarillo marca lo que está activo y el bermellón marca un error.
 
@@ -46,7 +47,11 @@ Como estos tonos tienen poco contraste contra el fondo claro (2.1:1 a 3.2:1), nu
 | Símbolos | `#8C6D1F` ocre oscuro |
 | Espacios | `#8A8D91` gris |
 
-Los tres primeros también salen de Okabe-Ito, pero son tonos distintos a los de los modelos para que las dos familias no se confundan. El espacio va en gris porque no es un signo visible.
+El azul y el rosa provienen de Okabe-Ito. El ocre es una adaptación más oscura para símbolos; no pertenece a la paleta original. El espacio va en gris porque no es un signo visible. Cada categoría se identifica también por su nombre.
+
+### Magnitud de las características
+
+La distancia normalizada de cada landmark a la muñeca usa una escala **secuencial** azul: `#F7FBFF`, `#C6DBEF`, `#6BAED6`, `#2171B5`, `#08306B`. La luminancia disminuye con la magnitud, por lo que el orden se conserva en escala de grises. La barra de color indica unidades de palma y el hover entrega el valor numérico. La presencia de mano y pose usa una escala acromática binaria: ausente o presente; no se interpreta como magnitud continua.
 
 ### Colores reservados
 
