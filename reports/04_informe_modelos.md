@@ -62,7 +62,7 @@ Todos los modelos se entrenaron en Kaggle con una GPU NVIDIA T4, ejecutando el n
 
 ### 5.8 Ajuste de hiperparámetros
 
-**Tabla 5.1.** Búsqueda reducida: 3 épocas sobre 5,000 secuencias, evaluada en el mismo conjunto de validación (Figura 1).
+**Tabla 5.1.** Búsqueda reducida: 3 épocas sobre 5,000 secuencias, evaluada en el mismo conjunto de validación (Figura 5).
 
 | Modelo | Configuración | Parámetros | Distancia de edición (val) |
 |---|---|---|---|
@@ -75,13 +75,13 @@ Todos los modelos se entrenaron en Kaggle con una GPU NVIDIA T4, ejecutando el n
 | M3 | Base, tasa 5·10⁻⁴ | 416,189 | 0.997 |
 | M3 | **Más capacidad (d = 192, 4 capas), tasa 5·10⁻⁴** | 1,216,189 | **0.983** |
 
-![Figura 1](figures/fig1_busqueda_hiperparametros.png)
+![Figura 5](figures/fig1_busqueda_hiperparametros.png)
 
 La búsqueda favoreció la mayor capacidad en las tres arquitecturas. Su principal limitación es el presupuesto: con 3 épocas, M1 y M3 apenas empezaban a emitir caracteres (distancia cercana a 1), mientras que la TCN, que converge más rápido, ya llegaba a 0.51. Por eso la búsqueda sirve para elegir dentro de cada arquitectura, pero no para compararlas entre sí. La comparación de cobertura (20% contra 50%) quedó sin decidir (0.997 contra 0.996), y se mantuvo el umbral de 50% del análisis exploratorio.
 
 ### 5.9 Entrenamiento final
 
-**Tabla 5.2.** Entrenamiento final con la configuración elegida (37,366 secuencias; Figura 2).
+**Tabla 5.2.** Entrenamiento final con la configuración elegida (37,366 secuencias; Figura 6).
 
 | | M1 BiGRU | M2 TCN | M3 Transformer |
 |---|---|---|---|
@@ -90,13 +90,13 @@ La búsqueda favoreció la mayor capacidad en las tres arquitecturas. Su princip
 | Minutos de entrenamiento | 20.8 | 11.4 | 24.3 |
 | Pérdida CTC en validación | 0.890 | 0.943 | 0.947 |
 
-![Figura 2](figures/fig2_curvas_entrenamiento.png)
+![Figura 6](figures/fig2_curvas_entrenamiento.png)
 
 M2 se detuvo por *early stopping*: no mejoró en tres épocas seguidas. M1 llegó a su mínimo en la época 13 y se estabilizó. M3 obtuvo su mejor pérdida en la **última** época, señal de que todavía no había convergido. Ningún modelo alcanzó el límite de 30 minutos.
 
 ### 5.10 Comparación en el conjunto de prueba
 
-**Tabla 5.3.** Resultados en prueba (Figura 3).
+**Tabla 5.3.** Resultados en prueba (Figura 7).
 
 | Modelo | Distancia de edición | CER | 1 − CER | Frases exactas | Parámetros | ms por secuencia* |
 |---|---|---|---|---|---|---|
@@ -106,7 +106,7 @@ M2 se detuvo por *early stopping*: no mejoró en tres épocas seguidas. M1 lleg�
 
 \* Inferencia en GPU T4, por lotes de 32 secuencias.
 
-![Figura 3](figures/fig3_comparacion_test.png)
+![Figura 7](figures/fig3_comparacion_test.png)
 
 M1 es el mejor modelo en las tres métricas de calidad. Transcribe correctamente unos 78 de cada 100 caracteres, y más de una de cada diez frases sin ningún error. El orden de los modelos es el mismo en validación (0.205, 0.232 y 0.235). Las cifras de prueba son algo peores que las de validación en todos los modelos, a pesar de que, según la preparación de datos, la validación era el conjunto con menor cobertura. Lo más probable es que la diferencia se deba a la variabilidad entre firmantes: con 9 y 10 participantes por conjunto, unos pocos firmantes pesan mucho en el promedio.
 
@@ -114,17 +114,17 @@ Respecto de la primera versión de M1 (128 unidades, 8 épocas y lotes de 16), q
 
 ### 5.11 Análisis de errores
 
-**Por tipo de carácter (Figura 4).** Las letras son el 61% del texto de entrenamiento y los dígitos el 25%. Aun así, las letras fallan más (19.4% en M1) que los dígitos (16.5%) y que los símbolos (17.8%; 9% del texto). La frecuencia, por sí sola, no explica el error. Los dígitos tienen configuraciones de mano muy distintas entre sí y aparecen en patrones repetitivos, como teléfonos y códigos postales. Las letras, en cambio, incluyen pares con formas parecidas que la coarticulación vuelve más ambiguos. **Los espacios son el punto más débil**: 27% de error en M1 y 45% en M2 y M3. No tienen seña propia, así que el modelo debe deducirlos de las pausas entre palabras. M1, que integra contexto en ambos sentidos de toda la frase, es el que mejor lo resuelve. Las ventanas locales de la TCN y el Transformer, sin suficiente entrenamiento, no lo logran.
+**Por tipo de carácter (Figura 8).** Las letras son el 61% del texto de entrenamiento y los dígitos el 25%. Aun así, las letras fallan más (19.4% en M1) que los dígitos (16.5%) y que los símbolos (17.8%; 9% del texto). La frecuencia, por sí sola, no explica el error. Los dígitos tienen configuraciones de mano muy distintas entre sí y aparecen en patrones repetitivos, como teléfonos y códigos postales. Las letras, en cambio, incluyen pares con formas parecidas que la coarticulación vuelve más ambiguos. **Los espacios son el punto más débil**: 27% de error en M1 y 45% en M2 y M3. No tienen seña propia, así que el modelo debe deducirlos de las pausas entre palabras. M1, que integra contexto en ambos sentidos de toda la frase, es el que mejor lo resuelve. Las ventanas locales de la TCN y el Transformer, sin suficiente entrenamiento, no lo logran.
 
-![Figura 4](figures/fig4_error_por_tipo_caracter.png)
+![Figura 8](figures/fig4_error_por_tipo_caracter.png)
 
-**Por longitud de la frase (Figura 5).** El error de M1 es estable entre 11 y más de 25 caracteres (0.21–0.22). Solo las frases muy cortas (10 caracteres o menos; 163 casos) son algo peores (0.26), porque cada error pesa más en el promedio. CTC maneja bien las secuencias largas, como las URLs y las direcciones que forman la cola de la distribución vista en el EDA.
+**Por longitud de la frase (Figura 9).** El error de M1 es estable entre 11 y más de 25 caracteres (0.21–0.22). Solo las frases muy cortas (10 caracteres o menos; 163 casos) son algo peores (0.26), porque cada error pesa más en el promedio. CTC maneja bien las secuencias largas, como las URLs y las direcciones que forman la cola de la distribución vista en el EDA.
 
-![Figura 5](figures/fig5_error_por_longitud.png)
+![Figura 9](figures/fig5_error_por_longitud.png)
 
-**Calidad contra costo (Figura 6).** M2 tiene la mitad del tiempo de inferencia y la mitad del tiempo de entrenamiento de M1, a cambio de 3 puntos de distancia de edición. En la aplicación, que corre en CPU, los tres modelos responden en milisegundos, así que la diferencia de costo no limita su uso.
+**Calidad contra costo (Figura 10).** M2 tiene la mitad del tiempo de inferencia y la mitad del tiempo de entrenamiento de M1, a cambio de 3 puntos de distancia de edición. En la aplicación, que corre en CPU, los tres modelos responden en milisegundos, así que la diferencia de costo no limita su uso.
 
-![Figura 6](figures/fig6_calidad_vs_costo.png)
+![Figura 10](figures/fig6_calidad_vs_costo.png)
 
 **Ejemplos.** Los errores típicos son omisiones y sustituciones de caracteres sueltos, no frases inventadas. Por ejemplo, "271097 bayshore boulevard" se transcribe como "271097 bayshore borevard" (M1), y "+20-4703-88149" se transcribe perfectamente con los tres modelos. Menos del 0.1% de las frases quedan vacías.
 
@@ -132,9 +132,21 @@ Respecto de la primera versión de M1 (128 unidades, 8 épocas y lotes de 16), q
 
 ## 6. Conclusiones
 
-1. **Se construyó un sistema completo de reconocimiento de *fingerspelling* a partir de landmarks.** Incluye la preparación de los 190 GB del corpus en 9 minutos, el entrenamiento y la comparación de tres arquitecturas y una aplicación que transcribe secuencias nuevas. Todo es reproducible desde un único notebook en Kaggle.
-2. **La formulación con CTC fue la adecuada.** Permitió entrenar sin saber dónde empieza cada letra, y el error no crece con la longitud de la frase. La restricción de longitud mínima de CTC, detectada en la preparación de datos, solo excluyó el 3.8% del corpus.
-3. **El mejor modelo es M1 (BiGRU + CTC).** En participantes nunca vistos alcanza una distancia de edición de 0.217 y un puntaje de competencia de 0.784, y transcribe sin errores el 10.9% de las frases. Es el modelo recomendado para la aplicación.
-4. **M2 (TCN) es la alternativa eficiente.** Entrena en la mitad del tiempo y predice en la mitad del tiempo, con 3 puntos más de error. **M3 (Transformer) fue el peor** con este presupuesto, pero no había convergido. Con más épocas, aumento de datos o un bloque convolucional (Conformer), como en las soluciones ganadoras de la competencia, es el que más margen de mejora tiene.
-5. **Los hallazgos del análisis exploratorio se reflejan en los resultados.** La partición por participante evitó una evaluación optimista. La máscara de validez y la interpolación selectiva permitieron usar el 71% del corpus sin rellenar con ceros. El desbalance de caracteres no basta para predecir dónde fallan los modelos: el principal problema son los espacios, que no tienen seña propia.
-6. **Limitaciones y trabajo futuro.** El presupuesto de GPU obligó a una búsqueda de hiperparámetros reducida, que no permitió decidir el umbral de cobertura. Tampoco se usaron aumento de datos, decodificación con modelo de lenguaje ni los datos suplementarios de la competencia. Son las tres mejoras con más potencial, en ese orden.
+### 6.1 Cumplimiento de los objetivos
+
+**Objetivo general.** Se cumplió. Se construyó un sistema que transcribe a texto secuencias de *fingerspelling* representadas como landmarks. Comprende la preparación del corpus completo, tres modelos CTC comparados en firmantes no vistos y una aplicación interactiva. Todo se reproduce desde un único notebook ejecutado en Kaggle.
+
+1. **Preprocesamiento único y reproducible.** Se cumplió. `preprocess_sequence` aplica los siete pasos derivados del análisis exploratorio y procesó las 67,208 secuencias (190 GB) en unos 9 minutos, reduciéndolas a 1.6 GB. Se verificó, en local y en Kaggle, que una secuencia cruda produce exactamente las mismas características al entrenar y en la aplicación.
+2. **Partición por firmante.** Se cumplió. Los 94 participantes se repartieron en 75, 9 y 10, sin ningún firmante compartido entre conjuntos (el código lo comprueba antes de entrenar). Las métricas de prueba corresponden, por lo tanto, a personas que ningún modelo vio.
+3. **Tres modelos CTC sobre el corpus completo.** Se cumplió. M1 (BiGRU), M2 (TCN) y M3 (Transformer) se ajustaron con una búsqueda de hiperparámetros y se entrenaron con 37,366 secuencias de los 68 archivos en una GPU T4, en 11 a 24 minutos cada uno.
+4. **Comparación de los modelos.** Se cumplió. **M1 es el mejor modelo**: en prueba alcanza una distancia de edición de 0.217, un CER de 0.216 (puntaje de la competencia 0.784) y un 10.9% de frases exactas. **M2 es la alternativa eficiente**: la mitad del tiempo de entrenamiento y de inferencia, con 3 puntos más de error. **M3 obtuvo el peor resultado** con este presupuesto, pero no había convergido.
+5. **Relación con el análisis exploratorio.** Se cumplió. El desbalance de caracteres no basta para predecir dónde fallan los modelos: las letras, el tipo más frecuente, fallan más que dígitos y símbolos, y el principal problema son los espacios, que no tienen seña propia. La decisión del EDA de no rellenar con ceros, sino interpolar huecos cortos y enmascarar el resto, permitió entrenar con el 71% del corpus. La partición por firmante, motivada por el 38% de varianza que explica el firmante, evitó una evaluación optimista.
+6. **Aplicación.** Se cumplió. La aplicación recibe secuencias crudas en CSV o Parquet, las preprocesa sin intervención del usuario y muestra la transcripción de uno, varios o los tres modelos, junto con su rendimiento en prueba en gráficas interactivas que se pueden ocultar.
+
+### 6.2 Efectividad de los algoritmos
+
+La formulación como reconocimiento de secuencias con CTC fue la adecuada. Permitió entrenar sin saber dónde empieza cada letra, el error no crece con la longitud de la frase y la restricción de longitud mínima solo excluyó el 3.8% del corpus. Con el presupuesto disponible, la recurrencia bidireccional aprovechó mejor un conjunto de este tamaño que la atención, y es el modelo recomendado para la aplicación. Una distancia de edición de 0.217 significa que, en promedio, uno de cada cinco caracteres requiere corrección. Es útil para demostrar el enfoque, pero todavía insuficiente para un uso cotidiano sin revisión.
+
+### 6.3 Limitaciones y trabajo futuro
+
+El presupuesto de GPU obligó a una búsqueda de hiperparámetros reducida, que no permitió decidir el umbral de cobertura ni comparar las arquitecturas en igualdad de convergencia. Tampoco se usaron aumento de datos, decodificación con un modelo de lenguaje ni los datos suplementarios de la competencia. Son las tres mejoras con más potencial, en ese orden. M3, en particular, debería reentrenarse con más épocas y con un bloque convolucional (Conformer), como en las soluciones ganadoras de la competencia.

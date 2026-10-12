@@ -132,9 +132,7 @@ Las secuencias tienen longitudes distintas. Se guardan concatenadas en un solo a
 | Aplicación | Streamlit, Plotly |
 | Control de versiones | Git y GitHub |
 
-El preprocesamiento del corpus completo se ejecutó en un notebook de Kaggle, donde la competencia ya está montada como fuente de datos y no hace falta descargar nada. El notebook clona el repositorio para usar el mismo código de `src/`. Como solo se leen 141 de las 1,631 columnas de cada archivo, las 67,208 secuencias (10.6 millones de cuadros) se procesaron en unos 9 minutos de CPU. El primer modelo se entrenó en una GPU local a partir de esas salidas.
-
-*Pendiente de completar por quien entrenó: modelo de la GPU y tiempo de entrenamiento de cada modelo.*
+El preprocesamiento del corpus completo se ejecutó en un notebook de Kaggle, donde la competencia ya está montada como fuente de datos y no hace falta descargar nada. El notebook clona el repositorio para usar el mismo código de `src/`. Como solo se leen 141 de las 1,631 columnas de cada archivo, las 67,208 secuencias (10.6 millones de cuadros) se procesaron en unos 9 minutos de CPU. Los tres modelos se entrenaron en el mismo notebook de Kaggle con una GPU NVIDIA T4; el tiempo de entrenamiento de cada uno se reporta en la sección 5.9.
 
 ## 5. Resultados: conjunto de datos, limpieza y análisis exploratorio
 
@@ -150,6 +148,10 @@ Las cifras del corpus de frases se calcularon sobre las 67,208 secuencias de `tr
 
 El peso de los dígitos es una consecuencia directa del contenido: en este corpus los números no son una clase rara, como sí lo son los símbolos poco usados.
 
+![Figura 1](figures/eda1_frecuencia_caracteres.png)
+
+**Figura 1.** Frecuencia de los 59 caracteres del vocabulario y proporción por tipo de carácter en el corpus de frases.
+
 ### 5.2 Estructura y calidad de la señal
 
 - **Composición.** De las 1,629 coordenadas por cuadro, 1,404 son de la cara (86.2 %), 99 del cuerpo (6.1 %) y 126 de las manos (7.7 %). Leer solo manos y cuerpo reduce la memoria al 13.8 %.
@@ -157,6 +159,10 @@ El peso de los dígitos es una consecuencia directa del contenido: en este corpu
 - **Una sola mano trabaja.** La mano no dominante está ausente en más del 90 % de los cuadros en el 99.2 % de las secuencias. No es un defecto: es la huella de una actividad unimanual. La mano activa es la derecha en el 79.6 % de las secuencias y la izquierda en el 20.4 %.
 - **La mano activa también se pierde.** En promedio falta en el 44 % de los cuadros de una secuencia, y en el 42.3 % de las secuencias falta en más de la mitad. El 41.6 % de los cuadros no tiene ninguna mano detectada. Ninguna secuencia carece por completo de ambas manos.
 - **Los huecos son cortos pero pesan poco.** La mediana de un hueco es de 3 cuadros y el 67.9 % mide 5 o menos, pero esos huecos cortos solo suman el 22 % de los cuadros ausentes. Unos pocos huecos largos (hasta 324 cuadros) concentran el resto.
+
+![Figura 2](figures/eda2_ausencia_manos.png)
+
+**Figura 2.** (a) Ausencia de la mano activa y de la no dominante por secuencia; (b) las secuencias se ubican sobre los ejes, no en la diagonal: una mano trabaja y la otra no; (c) dispersión de la ausencia por canal.
 
 ### 5.3 Qué estrategia de relleno usar
 
@@ -171,6 +177,10 @@ Para decidir cómo tratar los huecos se hizo un experimento con respuesta conoci
 
 Rellenar con ceros es 26 veces peor que interpolar, porque en coordenadas normalizadas el cero es una esquina de la imagen y equivale a teletransportar la mano. El error de la interpolación crece con la longitud del hueco (de 0.007 con un cuadro a 0.025 con 21). De ahí salen las dos reglas del preprocesamiento: interpolar solo huecos de hasta 5 cuadros y marcar el resto como no válido en lugar de inventarlo.
 
+![Figura 3](figures/eda3_estrategias_relleno.png)
+
+**Figura 3.** (a) Error de reconstrucción de cada estrategia según la longitud del hueco (escala logarítmica); (b) ejemplo de un hueco de 13 cuadros reconstruido con cada estrategia.
+
 ### 5.4 Artefactos de seguimiento
 
 La velocidad mediana del centroide de la mano es de 0.009 unidades por cuadro y el percentil 99.9 es 0.109. El criterio estadístico por sí solo marcaría el 5.3 % de las transiciones, demasiadas para ser errores. El criterio físico (más de 0.15) marca el 0.028 %, y todas coinciden con el estadístico. Exigir ambos deja 26 transiciones en 23 secuencias. Son pocos casos, y por eso se invalida el cuadro en vez de descartar la secuencia.
@@ -181,6 +191,10 @@ La velocidad mediana del centroide de la mano es de 0.009 unidades por cuadro y 
 - **Relación con el texto.** La duración crece con la longitud de la frase: correlación de Pearson de 0.62 y una pendiente de 9.2 cuadros por carácter (unos 0.3 segundos a 30 cuadros por segundo).
 - **El firmante importa.** El firmante más lento usa 3.5 veces más cuadros por carácter que el más rápido (16.0 contra 4.6). La prueba de Kruskal-Wallis rechaza que la velocidad sea igual entre firmantes (H = 398.2, 89 grados de libertad, p < 0.001), y el firmante explica el 38.2 % de la varianza. Este resultado es el que justifica partir los datos por participante.
 
+![Figura 4](figures/eda4_velocidad_firmantes.png)
+
+**Figura 4.** (a) Distribución de cuadros por carácter; (b) firmantes más rápidos y más lentos.
+
 ### 5.6 Resultado de la preparación sobre el corpus completo
 
 Al ejecutar el preprocesamiento sobre los 68 archivos se obtuvo lo siguiente:
@@ -188,7 +202,7 @@ Al ejecutar el preprocesamiento sobre los 68 archivos se obtuvo lo siguiente:
 1. **La calidad depende del firmante.** La cobertura media de la mano activa por participante va de 33 % a 94 %. El conjunto de validación, con solo 9 participantes, quedó con una cobertura media de 59 %, menor que la de entrenamiento (69 %) y prueba (70 %). La validación es, por lo tanto, algo más difícil que la prueba, y hay que tenerlo presente al comparar sus métricas.
 2. **El umbral de descarte tiene un costo alto.** Exigir 50 % de cobertura conserva el 71.1 % del corpus; exigir 20 % conserva el 90.5 %. Como el modelo recibe la máscara de validez, el umbral se trata como un hiperparámetro del entrenamiento.
 3. **CTC es viable en casi todo el corpus.** La mediana es de 8.8 cuadros por carácter. Solo 2,527 secuencias (3.8 %) tienen menos cuadros que los que su frase exige y se excluyen del entrenamiento.
-4. **Datos efectivos de entrenamiento.** Con cobertura mínima de 50 % y la condición de CTC, el primer modelo se entrenó con 37,366 secuencias y se validó con 3,857.
+4. **Datos efectivos de entrenamiento.** Con cobertura mínima de 50 % y la condición de CTC, los modelos se entrenaron con 37,366 secuencias y se validaron con 3,857.
 5. **Consistencia entre entrenamiento y aplicación.** Una secuencia cruda exportada para la aplicación produce exactamente las mismas características que las guardadas para entrenar. Se comprobó en local y en Kaggle.
 
 ### 5.7 Limitaciones

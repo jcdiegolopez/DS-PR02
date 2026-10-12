@@ -22,7 +22,7 @@ Se muestran frecuencia y categoría de caracteres, longitud de frases y aporte p
 
 ![Exploración de las muestras limpias](capturas/explorar.png)
 
-**Figura 1.** Distribución de caracteres de las muestras limpias. El selector distingue esta vista del corpus original.
+**Figura 11.** Distribución de caracteres de las muestras limpias. El selector distingue esta vista del corpus original.
 
 ## Predicción y comparación
 
@@ -34,11 +34,11 @@ La selección de modelos admite uno, varios o todos los checkpoints disponibles.
 
 La animación presenta la mano normalizada, la pista de emisiones CTC y el texto acumulado. La probabilidad de un token por frame no se presenta como una confianza calibrada de la frase completa. La reproducción usa frames válidos y una cadencia de visualización de 30 fps; no reconstruye la duración original de los huecos descartados.
 
-En la muestra de referencia `109-580-5359`, M1 produce `109-580-5354`: una sustitución y distancia normalizada de 0,0833. Es un ejemplo individual y no reemplaza la evaluación agregada.
+En la muestra de referencia `109-580-5359`, M1 produce `109-580-5355` (una sustitución), M2 omite el último dígito (`109-580-535`) y M3 la transcribe sin errores. Es un ejemplo individual y no reemplaza la evaluación agregada: en el conjunto de prueba completo, M1 es el mejor modelo.
 
 ![Predicción con el checkpoint real](capturas/predecir.png)
 
-**Figura 2.** Animación y subtítulo de M1 con la frase real y la predicción alineadas.
+**Figura 12.** Animación de la mano, emisiones CTC y subtítulos de los tres modelos con la frase real y la predicción alineadas carácter por carácter.
 
 ## Rendimiento e interpretación
 
@@ -50,13 +50,13 @@ El error por tipo de carácter de M1 es 19,4 % en letras, 16,5 % en dígitos, 17
 
 ![Métricas disponibles y controles](capturas/rendimiento.png)
 
-**Figura 3.** Métricas identificadas como validación. La interfaz indica que aún no hay una comparación final de las tres arquitecturas.
+**Figura 13.** Página de rendimiento con la comparación de los tres modelos en el conjunto de prueba y los controles para mostrar u ocultar cada gráfica.
 
-El botón **Medir en esta máquina** realiza una llamada de calentamiento por modelo y mide inferencia y decodificación sobre las 30 muestras. Excluye carga de pesos, lectura y preprocesamiento; no modifica las métricas guardadas ni vuelve a evaluar test. El diagrama combina CER, latencia media y parámetros. La demostración grabada registró aproximadamente **15,2 ms por secuencia** para M1; este valor depende del equipo y de su carga. Los 2,22 ms por secuencia registrados durante la evaluación por lotes provienen de otro entorno y no son directamente comparables con la inferencia individual en CPU.
+El botón **Medir en esta máquina** realiza una llamada de calentamiento por modelo y mide inferencia y decodificación sobre las 30 muestras. Excluye carga de pesos, lectura y preprocesamiento; no modifica las métricas guardadas ni vuelve a evaluar test. El diagrama combina CER, latencia media y parámetros. La demostración grabada registró aproximadamente **15,2 ms por secuencia** para M1; este valor depende del equipo y de su carga. Los tiempos registrados durante la evaluación por lotes en GPU (0,35 a 0,77 ms por secuencia, sección 5.10) provienen de otro entorno y no son directamente comparables con la inferencia individual en CPU.
 
 ![Curvas y medición de eficiencia](capturas/eficiencia.png)
 
-**Figura 4.** Medición de eficiencia en CPU, con el promedio de latencia y el número de parámetros de M1.
+**Figura 14.** Medición de eficiencia en CPU, con el promedio de latencia y el número de parámetros de M1.
 
 ## Diseño visual y accesibilidad
 
@@ -76,7 +76,7 @@ La presentación está en `reports/presentacion/ASL_resultados.pptx`; el guion y
 
 ## Integración de artefactos finales
 
-La app tiene soporte para BiGRU, TCN y Transformer mediante `src.models.load_model`. En el estado actual del repositorio solo existe un checkpoint final de M1 y su entrada de validación en `metrics.json`. Para completar la comparación de las tres arquitecturas es necesario incorporar los checkpoints finales de M2 y M3 y los resultados reales de test. No se sustituyen con predicciones simuladas. Esta dependencia afecta la comparación de resultados, aunque la navegación, la selección múltiple y el contrato de inferencia ya están implementados y probados.
+La app carga BiGRU, TCN y Transformer mediante `src.models.load_model`. El repositorio incluye los checkpoints finales de los tres modelos, entrenados en Kaggle, y sus métricas de prueba en `metrics.json`. Las pruebas automáticas verifican que la inferencia de la app coincide con `src.models.predict` para cada arquitectura.
 
 ## Referencias
 
